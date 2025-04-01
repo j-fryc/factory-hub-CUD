@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  fastapi_app:
+    build: .
+    container_name: factory_hub_CUD
+    ports:
+      - "8002:8002"
+    networks:
+      - factory_hub_network
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app
+    restart: always
+
+networks:
+  factory_hub_network:
+    external: true
