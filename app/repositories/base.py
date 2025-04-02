@@ -1,18 +1,17 @@
-from sqlmodel import Session
-
+from sqlmodel.ext.asyncio.session import AsyncSession
 from app.repositories.abstrac_repository import AbstractRepository
 
 
 class BaseRepository(AbstractRepository):
-    def __init__(self, model, db_handler: Session):
+    def __init__(self, model, db_handler: AsyncSession):
         self.model = model
         self.db_handler = db_handler
 
-    def delete(self, reference):
+    async def delete(self, reference):
         pass
 
-    def add(self, model):
+    async def add(self, model):
         pass
 
-    def update(self, reference):
+    async def update(self, reference):
         pass

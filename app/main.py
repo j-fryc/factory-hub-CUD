@@ -19,10 +19,10 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
-    db = Database(connection_string='sqlite:///app/data/foo.db')
-    db.create_db_and_tables()
+    db = Database(
+        connection_string=f'postgresql+asyncpg://{settings.db_user}:{settings.db_password}@db_service:5432/{settings.db_name}'
+    )
+    await db.create_db_and_tables()
     app.state.db = db
 
 app.include_router(cud_router)
-
-

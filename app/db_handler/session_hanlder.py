@@ -1,18 +1,18 @@
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 class DatabaseSession:
     def __init__(self, engine):
-        self._session = Session(engine)
+        self._session = AsyncSession(engine)
 
-    def __enter__(self):
+    async def __aenter__(self):
         return self._session
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    async def __aexit__(self, exc_type, exc_value, traceback):
         try:
             if exc_type is None:
-                self._session.commit()
+                await self._session.commit()
             else:
-                self._session.rollback()
+                await self._session.rollback()
         finally:
-            self._session.close()
+            await self._session.close()

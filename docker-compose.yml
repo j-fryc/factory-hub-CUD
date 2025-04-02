@@ -1,11 +1,26 @@
 version: '3.8'
 
 services:
+  db_service:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    networks:
+      - factory_hub_network
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 30s
+      retries: 6
+    restart: always
+
   fastapi_app:
     build: .
     container_name: factory_hub_CUD
     ports:
-      - "8002:8002"
+      - "8200:8200"
     networks:
       - factory_hub_network
     env_file:
@@ -13,6 +28,9 @@ services:
     volumes:
       - ./app:/app
     restart: always
+    depends_on:
+      db_service:
+        condition: service_healthy
 
 networks:
   factory_hub_network:
