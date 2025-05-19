@@ -9,10 +9,8 @@ class DatabaseSession:
         return self._session
 
     async def __aexit__(self, exc_type, exc_value, traceback):
-        try:
-            if exc_type is None:
-                await self._session.commit()
-            else:
-                await self._session.rollback()
-        finally:
-            await self._session.close()
+        if exc_type is None:
+            await self._session.commit()
+        else:
+            await self._session.rollback()
+        await self._session.close()
