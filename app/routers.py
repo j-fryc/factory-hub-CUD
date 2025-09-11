@@ -3,12 +3,17 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from pydantic_core import ValidationError
 
+from starlette.status import HTTP_207_MULTI_STATUS
+
+
+from app.db_sync.db_synchronizer import DBSync, get_db_synchronizer
+from app.db_sync.exceptions import SyncQueueException
 from app.repositories.repositories_exceptions import NotFoundError, InvalidDataError
 from app.schemas.product_schemas import ProductCreate, ProductUpdate
 from app.schemas.product_type_schemas import ProductTypeUpdate, ProductTypeCreate
-from app.services.product_service import ProductService, get_product_service
-from app.services.product_type_service import ProductTypeService, get_product_type_service
-from app.services.services_exceptions import DBException
+from app.cud_services.product_service import ProductService, get_product_service
+from app.cud_services.product_type_service import ProductTypeService, get_product_type_service
+from app.cud_services.services_exceptions import DBException
 
 router = APIRouter(prefix="/api/v1/cud")
 
@@ -136,4 +141,23 @@ async def delete_product_type(
         raise HTTPException(
             status_code=500,
             detail=str(e)
+        )
+
+
+sync_router = APIRouter(prefix="/api/v1")
+
+
+@sync_router.get("/sync-db")
+async def sync_db(
+        db_sync_manager: DBSync = Depends(get_db_synchronizer),
+):
+    try:
+        db_sync_manager.sync_db()
+        json_compatible_data = jsonable_encoder(db_sync_manager.last_sync_result)
+        return JSONResponse(content=json_compatible_data)
+    except (DBException, SyncQueueException):
+        json_compatible_data = jsonable_encoder(db_sync_manager.last_sync_result)
+        return JSONResponse(
+            status_code=HTTP_207_MULTI_STATUS,
+            content=json_compatible_data
         )

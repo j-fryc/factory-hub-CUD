@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db_service:
-    image: postgres:16-alpine
+    image: postgres:16
     ports:
       - "5432:5432"
     networks:
@@ -14,7 +14,15 @@ services:
       interval: 5s
       timeout: 30s
       retries: 6
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
+      - "-c"
+      - "max_replication_slots=10"
     restart: always
+    volumes:
+      - ./postgres/initdb:/docker-entrypoint-initdb.d:ro
 
   fastapi_app:
     build: .
@@ -32,6 +40,52 @@ services:
       db_service:
         condition: service_healthy
 
+  rabbit-mq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - factory_hub_network
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=pass
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  rabbitmq_exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: rabbitmq_exporter
+    ports:
+      - "9419:9419"
+    networks:
+      - factory_hub_network
+    environment:
+      - RABBIT_URL=http://rabbit-mq:15672
+      - RABBIT_USER=user
+      - RABBIT_PASSWORD=pass
+    depends_on:
+      - rabbit-mq
+
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:latest
+    container_name: datadog-agent
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=datadoghq.eu
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - ./datadog/conf.d:/etc/datadog-agent/conf.d:ro
+      - ./datadog/checks.d:/etc/datadog-agent/checks.d:ro
+    networks:
+      - factory_hub_network
+
+
 networks:
   factory_hub_network:
     external: true
+
+volumes:
+  rabbitmq_data:

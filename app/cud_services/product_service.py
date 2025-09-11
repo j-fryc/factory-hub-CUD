@@ -6,8 +6,8 @@ from app.repositories.product_repository import get_product_repository
 from app.schemas.product_schemas import ProductCreate, ProductUpdate, ProductOut
 
 from app.repositories.product_repository import ProductRepository
-from app.services.abstract_service import AbstractService
-from app.services.services_exceptions import DBException
+from app.cud_services.abstract_service import AbstractService
+from app.cud_services.services_exceptions import DBException
 
 
 class ProductService(AbstractService):
@@ -37,6 +37,15 @@ class ProductService(AbstractService):
     async def delete(self, product_id: str) -> None:
         try:
             return await self._repository.delete(product_id)
+        except SQLAlchemyError as e:
+            raise DBException(e)
+
+    async def get_all_data(self):
+        try:
+            updated_product = await self._repository.get_all_data()
+            return ProductOut.model_validate(updated_product)
+        except ValidationError as e:
+            raise e
         except SQLAlchemyError as e:
             raise DBException(e)
 

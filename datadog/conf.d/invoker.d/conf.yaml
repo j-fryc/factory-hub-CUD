@@ -1,0 +1,6 @@
+init_config:
+
+instances:
+  - url: http://fastapi_app:8200/api/v1/sync-db
+    metric_name: custom.fastapi.metric
+    service_check_name: custom.fastapi.health

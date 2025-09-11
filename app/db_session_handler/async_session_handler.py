@@ -1,11 +1,13 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
-class DatabaseSession:
+class AsyncDatabaseSession:
     def __init__(self, engine):
-        self._session = AsyncSession(engine)
+        self._engine = engine
+        self._session = None
 
     async def __aenter__(self):
+        self._session = AsyncSession(self._engine)
         return self._session
 
     async def __aexit__(self, exc_type, exc_value, traceback):

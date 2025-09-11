@@ -4,11 +4,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.schemas.product_type_schemas import ProductTypeCreate, ProductTypeUpdate, ProductTypeOut
 
 from app.repositories.product_type_repository import ProductTypeRepository, get_product_type_repository
-from app.services.abstract_service import AbstractService
+from app.cud_services.abstract_service import AbstractService
 
 from pydantic_core import ValidationError
 
-from app.services.services_exceptions import DBException
+from app.cud_services.services_exceptions import DBException
 
 
 class ProductTypeService(AbstractService):
@@ -38,6 +38,15 @@ class ProductTypeService(AbstractService):
     async def delete(self, product_id: str) -> None:
         try:
             return await self._repository.delete(product_id)
+        except SQLAlchemyError as e:
+            raise DBException(e)
+
+    async def get_all_data(self):
+        try:
+            updated_product = await self._repository.get_all_data()
+            return ProductTypeOut.model_validate(updated_product)
+        except ValidationError as e:
+            raise e
         except SQLAlchemyError as e:
             raise DBException(e)
 
