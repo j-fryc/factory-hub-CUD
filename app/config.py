@@ -6,9 +6,8 @@ from pydantic import Field
 
 class Settings(BaseSettings):
     secret_key: str
-    db_name: str = Field(alias="POSTGRES_DB")
-    db_user: str = Field(alias="POSTGRES_USER")
-    db_password: str = Field(alias="POSTGRES_PASSWORD")
+    db_sync_connection_string: str = Field(alias="POSTGRES_SYNC_URL")
+    db_async_connection_string: str = Field(alias="POSTGRES_ASYNC_URL")
     rabbitmq_host: str = Field(alias="RABBITMQ_HOST")
     rabbitmq_port: int = Field(alias="RABBITMQ_PORT")
     rabbitmq_user: str = Field(alias="RABBITMQ_USER")

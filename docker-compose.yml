@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db_service:
-    image: postgres:16
+    image: postgres:16-alpine
     ports:
       - "5432:5432"
     networks:
@@ -48,24 +48,10 @@ services:
     networks:
       - factory_hub_network
     environment:
-      - RABBITMQ_DEFAULT_USER=user
-      - RABBITMQ_DEFAULT_PASS=pass
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-
-  rabbitmq_exporter:
-    image: kbudde/rabbitmq-exporter:latest
-    container_name: rabbitmq_exporter
-    ports:
-      - "9419:9419"
-    networks:
-      - factory_hub_network
-    environment:
-      - RABBIT_URL=http://rabbit-mq:15672
-      - RABBIT_USER=user
-      - RABBIT_PASSWORD=pass
-    depends_on:
-      - rabbit-mq
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest

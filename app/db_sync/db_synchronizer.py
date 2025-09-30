@@ -73,12 +73,12 @@ class DBSync:
                 self._mark_event(event, db_session, QueueStatus.FAILED)
                 self._last_sync_result.failed += 1
                 self._last_sync_result.errors.append(f"Event validation failed: {e}")
-                raise DBException(f"Event validation failed: {e}")
+                raise DBException(f"Event validation failed: {e}") from e
             except Exception as e:
                 self._mark_event(event, db_session, QueueStatus.FAILED)
                 self._last_sync_result.failed += 1
                 self._last_sync_result.errors.append(f"Event serialization failed: {e}")
-                raise DBException(f"Event serialization failed: {e}")
+                raise DBException(f"Event serialization failed: {e}") from e
 
             try:
                 mq_producer.publish_data(
@@ -90,7 +90,7 @@ class DBSync:
                 self._mark_event(event, db_session, QueueStatus.FAILED)
                 self._last_sync_result.failed += 1
                 self._last_sync_result.errors.append(f"Failed to publish event to queue: {e}")
-                raise SyncQueueException(f"Failed to publish event to queue: {e}")
+                raise SyncQueueException(f"Failed to publish event to queue: {e}") from e
             self._mark_event(event, db_session, QueueStatus.SENT)
             self._last_sync_result.total = len(events)
 
@@ -101,11 +101,11 @@ class DBSync:
             db_session.add(event)
             db_session.commit()
         except IntegrityError as e:
-            raise DBException(f"Database integrity error: {e}")
+            raise DBException(f"Database integrity error: {e}") from e
         except (SQLAlchemyError, OperationalError) as e:
-            raise DBException(f"Database error: {e}")
+            raise DBException(f"Database error: {e}") from e
         except Exception as e:
-            raise DBException(f"Unexpected database error: {e}")
+            raise DBException(f"Unexpected database error: {e}") from e
 
 
 def get_db_synchronizer(

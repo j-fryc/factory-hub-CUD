@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Union
 
 import pika
+from fastapi import Depends
 from pika.exceptions import (
     AMQPConnectionError,
     AMQPChannelError,
@@ -12,7 +13,9 @@ from pika.exceptions import (
     StreamLostError,
     AMQPError
 )
+from pydantic_settings import BaseSettings
 
+from app.config import get_settings
 from app.db_sync.exceptions import MQPublishException, MQException, MQConnectionException
 
 
@@ -26,12 +29,12 @@ class ExchangeType(Enum):
 class MQProducer:
     def __init__(
             self,
-            exchange_type: ExchangeType = ExchangeType.DIRECT,
-            exchange_name: str = 'db_sync',
-            host: str = 'rabbit-mq',
-            port: int = 5672,
-            user: str = 'user',
-            password: str = 'pass'
+            exchange_type: ExchangeType,
+            exchange_name: str,
+            host: str,
+            port: int,
+            user: str,
+            password: str
     ):
         self._exchange_type = exchange_type
         self._exchange_name = exchange_name
@@ -59,17 +62,17 @@ class MQProducer:
                 mandatory=True
             )
         except NackError as e:
-            raise MQPublishException(f"Message was rejected by broker: {e}")
+            raise MQPublishException(f"Message was rejected by broker: {e}") from e
         except UnroutableError as e:
-            raise MQPublishException(f"Message could not be routed: {e}")
+            raise MQPublishException(f"Message could not be routed: {e}") from e
         except (ChannelClosedByBroker, AMQPChannelError) as e:
-            raise MQPublishException(f"Channel error during publish: {e}")
+            raise MQPublishException(f"Channel error during publish: {e}") from e
         except (ConnectionClosedByBroker, AMQPConnectionError, StreamLostError) as e:
-            raise MQConnectionException(f"Connection error during publish: {e}")
+            raise MQConnectionException(f"Connection error during publish: {e}") from e
         except AMQPError as e:
-            raise MQException(f"AMQP error during publish: {e}")
+            raise MQException(f"AMQP error during publish: {e}") from e
         except Exception as e:
-            raise MQException(f"Unexpected error during publish: {e}")
+            raise MQException(f"Unexpected error during publish: {e}") from e
 
     def __enter__(self):
         try:
@@ -90,9 +93,9 @@ class MQProducer:
             )
             self._channel.confirm_delivery()
         except (AMQPConnectionError, ConnectionClosedByBroker, StreamLostError) as e:
-            raise MQConnectionException(f"Failed to connect to RabbitMQ: {e}")
+            raise MQConnectionException(f"Failed to connect to RabbitMQ: {e}") from e
         except Exception as e:
-            raise MQConnectionException(f"Unexpected error connecting to RabbitMQ: {e}")
+            raise MQConnectionException(f"Unexpected error connecting to RabbitMQ: {e}") from e
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -105,5 +108,14 @@ class MQProducer:
             pass
 
 
-def get_mq_producer():
-    return MQProducer()
+def get_mq_producer(
+    settings: BaseSettings = Depends(get_settings)
+):
+    return MQProducer(
+        exchange_type=ExchangeType.DIRECT,
+        exchange_name=settings.rabbitmq_exchange,
+        host=settings.rabbitmq_host,
+        port=settings.rabbitmq_port,
+        user=settings.rabbitmq_user,
+        password=settings.rabbitmq_password
+    )

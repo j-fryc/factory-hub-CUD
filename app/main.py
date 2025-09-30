@@ -21,12 +21,12 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     async_db_handler = AsyncDatabase(
-        connection_string=f'postgresql+asyncpg://{settings.db_user}:{settings.db_password}@db_service:5432/{settings.db_name}'
+        connection_string=settings.db_async_connection_string
     )
     sync_db_handler = SyncDatabase(
-        connection_string=f'postgresql+psycopg2://{settings.db_user}:{settings.db_password}@db_service:5432/{settings.db_name}'
+        connection_string=settings.db_sync_connection_string
     )
-    await async_db_handler.create_db_and_tables()
+    # await async_db_handler.create_db_and_tables()
     app.state.async_db_handler = async_db_handler
     app.state.sync_db_handler = sync_db_handler
 

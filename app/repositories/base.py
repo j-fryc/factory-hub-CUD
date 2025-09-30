@@ -25,7 +25,7 @@ class BaseRepository(AbstractRepository):
             await self._db_handler.delete(entity)
             self._add_sync_entry(entity=entity, event_type=AggregateType.DELETE)
         except SQLAlchemyError as e:
-            raise DatabaseOperationError(str(e))
+            raise DatabaseOperationError(str(e)) from e
 
     async def add(self, data) -> SQLModel:
         try:
@@ -36,11 +36,11 @@ class BaseRepository(AbstractRepository):
             await self._db_handler.refresh(entity)
             return entity
         except ValueError as e:
-            raise InvalidDataError(str(e))
+            raise InvalidDataError(str(e)) from e
         except IntegrityError as e:
-            raise InvalidDataError(str(e))
+            raise InvalidDataError(str(e)) from e
         except SQLAlchemyError as e:
-            raise DatabaseOperationError(str(e))
+            raise DatabaseOperationError(str(e)) from e
 
     async def update(self, reference: str, data) -> SQLModel:
         entity = await self._db_handler.get(self._model, reference)
@@ -55,11 +55,11 @@ class BaseRepository(AbstractRepository):
             await self._db_handler.refresh(entity)
             return entity
         except ValueError as e:
-            raise InvalidDataError(str(e))
+            raise InvalidDataError(str(e)) from e
         except IntegrityError as e:
-            raise InvalidDataError(str(e))
+            raise InvalidDataError(str(e)) from e
         except SQLAlchemyError as e:
-            raise DatabaseOperationError(str(e))
+            raise DatabaseOperationError(str(e)) from e
 
     async def get_all_data(self) -> List[SQLModel]:
         try:
@@ -69,7 +69,7 @@ class BaseRepository(AbstractRepository):
                 raise NotFoundError()
             return list(entities)
         except SQLAlchemyError as e:
-            raise DatabaseOperationError(str(e))
+            raise DatabaseOperationError(str(e)) from e
 
     def _add_sync_entry(self, entity, event_type: AggregateType) -> None:
         sync_entity = self._sync_model(

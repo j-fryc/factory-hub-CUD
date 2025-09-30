@@ -3,4 +3,4 @@ mkdir -p /app/data
 # Run the API
 cd /app
 alembic upgrade head
-fastapi run app/main.py --port 8200
+fastapi run main.py --port 8200

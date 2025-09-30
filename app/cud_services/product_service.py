@@ -19,35 +19,29 @@ class ProductService(AbstractService):
             serialized_data = data.model_dump()
             created_product = await self._repository.add(serialized_data)
             return ProductOut.model_validate(created_product)
-        except ValidationError as e:
-            raise e
         except SQLAlchemyError as e:
-            raise DBException(e)
+            raise DBException(e) from e
 
     async def update(self, product_id: str, data: ProductUpdate) -> ProductOut:
         try:
             serialized_data = data.model_dump()
             updated_product = await self._repository.update(product_id, serialized_data)
             return ProductOut.model_validate(updated_product)
-        except ValidationError as e:
-            raise e
         except SQLAlchemyError as e:
-            raise DBException(e)
+            raise DBException(e) from e
 
     async def delete(self, product_id: str) -> None:
         try:
             return await self._repository.delete(product_id)
         except SQLAlchemyError as e:
-            raise DBException(e)
+            raise DBException(e) from e
 
     async def get_all_data(self):
         try:
             updated_product = await self._repository.get_all_data()
             return ProductOut.model_validate(updated_product)
-        except ValidationError as e:
-            raise e
         except SQLAlchemyError as e:
-            raise DBException(e)
+            raise DBException(e) from e
 
 
 def get_product_service(repository: ProductRepository = Depends(get_product_repository)) -> ProductService:

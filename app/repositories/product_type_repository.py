@@ -22,7 +22,7 @@ class ProductTypeRepository(BaseRepository):
             await self._db_handler.delete(entity)
             self._add_sync_entry(entity=entity, event_type=AggregateType.DELETE)
         except SQLAlchemyError as e:
-            raise DatabaseOperationError(str(e))
+            raise DatabaseOperationError(str(e)) from e
 
 
 def get_product_type_repository(db_session: AsyncSession = Depends(get_async_db_session)) -> ProductTypeRepository:
