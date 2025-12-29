@@ -7,8 +7,8 @@ from app.repositories.base import BaseRepository
 
 
 class ProductRepository(BaseRepository):
-    def __init__(self, db_handler):
-        super().__init__(Product, db_handler)
+    def __init__(self, db_handler: AsyncSession):
+        super().__init__(model=Product, db_handler=db_handler)
 
 
 def get_product_repository(db_session: AsyncSession = Depends(get_async_db_session)) -> ProductRepository:

@@ -1,23 +1,22 @@
 from typing import Optional
 
-from sqlmodel import SQLModel
-from pydantic import ConfigDict
+from pydantic import ConfigDict, BaseModel
 import uuid as uuid_pkg
 
 
-class ProductTypeOut(SQLModel):
+class ProductTypeOut(BaseModel):
     id: uuid_pkg.UUID
-    type_name: str
+    name: str
     description: str
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class ProductTypeCreate(SQLModel):
-    type_name: str
+class ProductTypeCreate(BaseModel):
+    name: str
     description: str
 
 
-class ProductTypeUpdate(SQLModel):
-    type_name: Optional[str] = None
+class ProductTypeUpdate(BaseModel):
+    name: Optional[str] = None
     description: Optional[str] = None

@@ -8,7 +8,7 @@ from sqlmodel import SQLModel
 
 from alembic import context
 
-from models import Product, ProductType, OutboxEvent
+from app.models import Product, ProductType, OutboxEvent
 
 import os
 
@@ -84,9 +84,11 @@ async def run_async_migrations() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    mode = context.get_x_argument(as_dictionary=True).get("mode")
+    mode = context.config.cmd_opts.cmd[0].__name__
     if mode == "revision":
         db_connection_url = config.get_main_option("sqlalchemy.generate_migration_url")
+    elif mode == "upgrade":
+        db_connection_url = config.get_main_option("sqlalchemy.apply_migration_url")
     else:
         db_connection_url = os.environ.get("POSTGRES_SYNC_URL")
     connectable = create_engine(db_connection_url, poolclass=pool.NullPool)

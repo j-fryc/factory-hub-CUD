@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
@@ -14,6 +16,7 @@ from app.schemas.product_type_schemas import ProductTypeUpdate, ProductTypeCreat
 from app.cud_services.product_service import ProductService, get_product_service
 from app.cud_services.product_type_service import ProductTypeService, get_product_type_service
 from app.cud_services.services_exceptions import DBException
+from app.utils import get_product_type_lock
 
 router = APIRouter(prefix="/api/v1/cud")
 
@@ -84,22 +87,24 @@ async def delete_product(
 @router.post("/product-types/")
 async def create_product_type(
         product_type_data: ProductTypeCreate,
-        product_type_service: ProductTypeService = Depends(get_product_type_service)
+        product_type_service: ProductTypeService = Depends(get_product_type_service),
+        lock: asyncio.Lock = Depends(get_product_type_lock)
 ):
-    try:
-        created_product_type = await product_type_service.create(product_type_data)
-        json_compatible_data = jsonable_encoder(created_product_type)
-        return JSONResponse(content=json_compatible_data)
-    except (ValidationError, InvalidDataError) as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
-    except DBException as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+    async with lock:
+        try:
+            created_product_type = await product_type_service.create(product_type_data)
+            json_compatible_data = jsonable_encoder(created_product_type)
+            return JSONResponse(content=json_compatible_data)
+        except (ValidationError, InvalidDataError) as e:
+            raise HTTPException(
+                status_code=400,
+                detail=str(e)
+            )
+        except DBException as e:
+            raise HTTPException(
+                status_code=500,
+                detail=str(e)
+            )
 
 
 @router.patch("/product-types/{product_type_id}")
@@ -155,7 +160,7 @@ async def sync_db(
         db_sync_manager.sync_db()
         json_compatible_data = jsonable_encoder(db_sync_manager.last_sync_result)
         return JSONResponse(content=json_compatible_data)
-    except (DBException, SyncQueueException):
+    except (DBException, SyncQueueException) as e:
         json_compatible_data = jsonable_encoder(db_sync_manager.last_sync_result)
         return JSONResponse(
             status_code=HTTP_207_MULTI_STATUS,

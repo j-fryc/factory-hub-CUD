@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+import asyncio
+
+from fastapi import FastAPI, Request
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
@@ -29,6 +31,7 @@ async def startup():
     # await async_db_handler.create_db_and_tables()
     app.state.async_db_handler = async_db_handler
     app.state.sync_db_handler = sync_db_handler
+    app.state.product_type_lock = asyncio.Lock()
 
 app.include_router(cud_router)
 app.include_router(sync_router)

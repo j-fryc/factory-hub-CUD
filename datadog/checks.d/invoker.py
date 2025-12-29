@@ -32,7 +32,7 @@ class DBSync(AgentCheck):
             else:
                 self.service_check(
                     service_check_name,
-                    self.CRITICAL,
+                    self.WARNING,
                     message=f"Response JSON from {url} does not contain 'metric' key"
                 )
             self.gauge(metric_name, value)

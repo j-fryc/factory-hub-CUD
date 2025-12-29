@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from sqlmodel import Field, SQLModel, Relationship
 import uuid as uuid_pkg
@@ -14,8 +14,10 @@ class ProductType(SQLModel, table=True):
         index=True,
         nullable=False,
     )
-    type_name: str = Field(..., description="Name of the product type")
+    name: str = Field(..., description="Name of the product type")
     description: str = Field(..., description="Description of the product type")
+    entity_version: int = Field(default=1, description="Document version")
+
     products: List["Product"] = Relationship(
         back_populates="product_type",
         sa_relationship_kwargs={"lazy": "selectin"}
@@ -40,6 +42,7 @@ class Product(SQLModel, table=True):
     )
     quantity: int = Field(..., description="Quantity of products")
     price: float = Field(..., index=True, description="Price of single product")
+    entity_version: int = Field(default=1, description="Document version")
 
 
 class QueueStatus(str, Enum):
@@ -63,9 +66,8 @@ class OutboxEvent(SQLModel, table=True):
         nullable=False,
     )
     aggregate_type: str = Field(..., description="Type of object that event concerns")
-    aggregate_id: uuid_pkg.UUID = Field(..., description="ID of the entity associated with the event")
     event_type: AggregateType = Field(..., description="Type of event, ex. create")
-    payload: dict = Field(default_factory=dict, sa_column=Column(JSON), description="Payload of the event")
+    payload: ProductType = Field(..., sa_column=Column(JSON), description="Payload of the event")
     created_at: datetime = Field(default_factory=lambda: datetime.now(), description="Datetime when event was created")
     processed_at: datetime | None = Field(default=None, description="Datetime when event was processed")
     status: QueueStatus = Field(..., description="Status of processing event")
