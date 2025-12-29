@@ -1,3 +1,5 @@
+import json
+
 from fastapi import Depends
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,8 +11,8 @@ from app.repositories.repositories_exceptions import NotFoundError, DatabaseOper
 
 
 class ProductTypeRepository(BaseRepository):
-    def __init__(self, db_handler):
-        super().__init__(ProductType, db_handler)
+    def __init__(self, db_handler: AsyncSession):
+        super().__init__(model=ProductType, db_handler=db_handler)
 
     async def delete(self, reference: str) -> None:
         entity = await self._db_handler.get(self._model, reference)
@@ -18,9 +20,20 @@ class ProductTypeRepository(BaseRepository):
             raise NotFoundError(reference)
         try:
             for product in entity.products:
-                self._add_sync_entry(entity=product, event_type=AggregateType.DELETE)
+                await self._db_handler.delete(product)
+                product.entity_version += 1
+                self._add_sync_entry(
+                    entity=json.loads(product.json()),
+                    aggregate_type=product.__tablename__,
+                    event_type=AggregateType.DELETE
+                )
             await self._db_handler.delete(entity)
-            self._add_sync_entry(entity=entity, event_type=AggregateType.DELETE)
+            entity.entity_version += 1
+            self._add_sync_entry(
+                entity=json.loads(entity.json()),
+                aggregate_type=entity.__tablename__,
+                event_type=AggregateType.DELETE
+            )
         except SQLAlchemyError as e:
             raise DatabaseOperationError(str(e)) from e
 

@@ -89,7 +89,8 @@ class MQProducer:
             self._channel = self._connection.channel()
             self._channel.exchange_declare(
                 exchange=self._exchange_name,
-                exchange_type=self._exchange_type.value
+                exchange_type=self._exchange_type.value,
+                durable=True
             )
             self._channel.confirm_delivery()
         except (AMQPConnectionError, ConnectionClosedByBroker, StreamLostError) as e:

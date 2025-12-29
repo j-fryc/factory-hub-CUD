@@ -1,6 +1,5 @@
-from enum import Enum
-from typing import List
 import json
+from typing import List, Type
 
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -12,7 +11,7 @@ from app.repositories.repositories_exceptions import InvalidDataError, DatabaseO
 
 
 class BaseRepository(AbstractRepository):
-    def __init__(self, model, db_handler: AsyncSession):
+    def __init__(self, model: Type[SQLModel], db_handler: AsyncSession):
         self._model = model
         self._db_handler = db_handler
         self._sync_model = OutboxEvent
@@ -23,15 +22,24 @@ class BaseRepository(AbstractRepository):
             raise NotFoundError(reference)
         try:
             await self._db_handler.delete(entity)
-            self._add_sync_entry(entity=entity, event_type=AggregateType.DELETE)
+            entity.entity_version += 1
+            self._add_sync_entry(
+                entity=json.loads(entity.json()),
+                aggregate_type=entity.__tablename__,
+                event_type=AggregateType.DELETE
+            )
         except SQLAlchemyError as e:
             raise DatabaseOperationError(str(e)) from e
 
-    async def add(self, data) -> SQLModel:
+    async def add(self, data: dict) -> SQLModel:
         try:
             entity = self._model(**data)
             self._db_handler.add(entity)
-            self._add_sync_entry(entity=entity, event_type=AggregateType.CREATE)
+            self._add_sync_entry(
+                entity=json.loads(entity.json()),
+                aggregate_type=entity.__tablename__,
+                event_type=AggregateType.CREATE
+            )
             await self._db_handler.flush()
             await self._db_handler.refresh(entity)
             return entity
@@ -42,7 +50,7 @@ class BaseRepository(AbstractRepository):
         except SQLAlchemyError as e:
             raise DatabaseOperationError(str(e)) from e
 
-    async def update(self, reference: str, data) -> SQLModel:
+    async def update(self, reference: str, data: dict) -> SQLModel:
         entity = await self._db_handler.get(self._model, reference)
         if entity is None:
             raise NotFoundError(reference)
@@ -50,7 +58,12 @@ class BaseRepository(AbstractRepository):
             for attr, value in data.items():
                 if value and hasattr(entity, attr):
                     setattr(entity, attr, value)
-            self._add_sync_entry(entity=entity, event_type=AggregateType.UPDATE)
+            entity.entity_version += 1
+            self._add_sync_entry(
+                entity=json.loads(entity.json()),
+                aggregate_type=entity.__tablename__,
+                event_type=AggregateType.UPDATE
+            )
             await self._db_handler.flush()
             await self._db_handler.refresh(entity)
             return entity
@@ -71,12 +84,11 @@ class BaseRepository(AbstractRepository):
         except SQLAlchemyError as e:
             raise DatabaseOperationError(str(e)) from e
 
-    def _add_sync_entry(self, entity, event_type: AggregateType) -> None:
+    def _add_sync_entry(self, entity: dict, aggregate_type: str, event_type: AggregateType) -> None:
         sync_entity = self._sync_model(
-            aggregate_type=entity.__tablename__,
-            aggregate_id=entity.id,
+            aggregate_type=aggregate_type,
             event_type=event_type,
-            payload=json.loads(entity.json()),
+            payload=entity,
             status=QueueStatus.PENDING
         )
         self._db_handler.add(sync_entity)
